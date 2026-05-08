@@ -16,7 +16,7 @@ st.set_page_config(
 # --- 2. ENGINE: AI CONFIGURATION ---
 try:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
     st.error(f"AI System Error: {e}")
 
@@ -178,7 +178,7 @@ with col_lab:
                 st.info(f"💡 Phonics Rule: In '{target}', we use 'PH' for the /f/ sound.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- 8. AI TUTOR (UNTOUCHED) ---
+# --- 8. AI TUTOR (RECTIFIED RATE LIMIT ERROR) ---
 with col_ai:
     st.markdown("<h1>AI Buddy Hub</h1>", unsafe_allow_html=True)
     st.markdown("<div class='main-card' style='height: 80vh;'>", unsafe_allow_html=True)
@@ -194,7 +194,15 @@ with col_ai:
             with st.chat_message("user"):
                 st.write(prompt)
             with st.chat_message("assistant"):
-                res = model.generate_content(f"Literacy coach for word '{target}': {prompt}")
-                st.write(res.text)
-                st.session_state.chat_history.append({"role": "assistant", "content": res.text})
+                # RECTIFICATION BLOCK STARTS HERE
+                try:
+                    res = model.generate_content(f"Literacy coach for word '{target}': {prompt}")
+                    st.write(res.text)
+                    st.session_state.chat_history.append({"role": "assistant", "content": res.text})
+                except Exception as e:
+                    if "429" in str(e) or "ResourceExhausted" in str(e):
+                        st.warning("⚠️ The AI is a bit busy. Please wait 1 minute before asking another question.")
+                    else:
+                        st.error("An unexpected error occurred. Please try again.")
+                # RECTIFICATION BLOCK ENDS HERE
     st.markdown("</div>", unsafe_allow_html=True)
